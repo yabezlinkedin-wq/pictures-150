@@ -1,0 +1,43 @@
+# ---------------------------------------------------------------------------
+# GPU override - use Together with the base compose file:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build
+#
+# Requirements on the host:
+#   * an NVIDIA GPU with a recent driver,
+#   * the NVIDIA Container Toolkit (https://docs.nvidia.com/datacenter/cloud-native/),
+#   * `docker run --rm --gpus all nvidia/cuda:12.6.0-base-ubuntu22.04 nvidia-smi` working.
+#
+# It rebuilds the image with the CUDA PyTorch wheels (pick the cuXXX tag that
+# matches the installed driver) and switches Demucs to CUDA for both the bot
+# and the web interface.  Vocal separation is roughly 10-30x faster than on
+# CPU.
+# ---------------------------------------------------------------------------
+services:
+  bot:
+    build:
+      args:
+        TORCH_INDEX_URL: ${TORCH_INDEX_URL:-https://download.pytorch.org/whl/cu126}
+    environment:
+      DEMUCS_DEVICE: cuda
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  web:
+    build:
+      args:
+        TORCH_INDEX_URL: ${TORCH_INDEX_URL:-https://download.pytorch.org/whl/cu126}
+    environment:
+      DEMUCS_DEVICE: cuda
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

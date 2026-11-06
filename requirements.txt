@@ -1,0 +1,50 @@
+# ---------------------------------------------------------------------------
+# Python dependencies - video processing Telegram bot.
+#
+#   python -m pip install -r requirements.txt
+#
+# FFmpeg (the ``ffmpeg`` and ``ffprobe`` executables) must be installed
+# separately - it is not a Python package.  See the README.
+# ---------------------------------------------------------------------------
+
+# --- Telegram bot framework ------------------------------------------------
+python-telegram-bot==22.8
+httpx==0.28.1                 # streamed downloads/uploads with progress
+python-dotenv==1.2.3          # reads the .env file
+
+# --- web interface ----------------------------------------------------------
+# Browser front end (web/): upload -> process -> download. Same pipeline as
+# the bot, but no Telegram size limits - started with `python -m web.app`.
+fastapi==0.141.1
+uvicorn==0.52.4
+python-multipart==0.0.32      # multipart/form-data parsing for uploads
+
+# --- Frame selection / overlay ---------------------------------------------
+Pillow==12.3.0
+numpy==2.2.6
+
+# --- Face-centred pair composite -------------------------------------------
+# Haar-cascade face detection for the 150 pair composites (face centred in
+# its half of the 16:9 canvas).  The *headless* build is required: the
+# cascades ship inside the wheel (cv2/data/*.xml) and no GUI libraries are
+# needed.  Pinned to 4.x on purpose - OpenCV 5.0 no longer bundles the
+# cascade files.
+opencv-python-headless==4.14.0.94
+
+# --- Vocal separation ------------------------------------------------------
+# A real source-separation model (Hybrid Transformer Demucs).  It shells out
+# to FFmpeg for all audio decoding/encoding, so torchaudio is NOT required.
+demucs==4.1.0
+tqdm>=4.65                    # progress output that the bot parses
+
+# --- PyTorch --------------------------------------------------------------
+# PyTorch is required for the separation model; without it the bot reports a
+# clear error instead of failing silently.
+#
+# Install the build that matches your machine *before* installing this file:
+#
+#   CPU only:   pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   NVIDIA GPU: pip install torch --index-url https://download.pytorch.org/whl/cu126
+#
+# (The Dockerfile takes care of this automatically - see TORCH_INDEX_URL.)
+torch>=2.1,<3

@@ -1,0 +1,120 @@
+# ---------------------------------------------------------------------------
+# Full stack: the bot + a local Telegram Bot API server + the web interface.
+#
+#   cp .env.example .env      # then fill in the token, api_id and api_hash
+#   docker compose up -d --build
+#   docker compose logs -f bot
+#
+# Why the extra Bot API service?  The official Bot API only allows downloads
+# of 20 MB and uploads of 50 MB, which a 20-minute video exceeds.  The local
+# server raises both limits to 2000 MB.  If you only test with short clips you
+# can delete the ``telegram-bot-api`` service and the two TELEGRAM_API_*_URL
+# variables below to use api.telegram.org instead.
+#
+# The ``web`` service is the browser front end (upload -> process ->
+# download); it does not use Telegram at all, so the Bot API size limits
+# never apply to it.  Set WEB_PASSWORD in .env before exposing it.
+# ---------------------------------------------------------------------------
+name: video-bot
+
+x-app-build: &app-build
+  context: .
+  args:
+    # CPU wheels by default; docker-compose.gpu.yml switches to CUDA.
+    TORCH_INDEX_URL: ${TORCH_INDEX_URL:-https://download.pytorch.org/whl/cpu}
+
+services:
+  telegram-bot-api:
+    image: aiogram/telegram-bot-api:latest
+    container_name: video-bot-api
+    restart: unless-stopped
+    environment:
+      TELEGRAM_API_ID: ${TELEGRAM_API_ID:?set TELEGRAM_API_ID in .env}
+      TELEGRAM_API_HASH: ${TELEGRAM_API_HASH:?set TELEGRAM_API_HASH in .env}
+      # --local: serve files straight from the data directory (needed for
+      # files larger than 20 MB in either direction).
+      TELEGRAM_LOCAL: "1"
+    volumes:
+      - bot-api-data:/var/lib/telegram-bot-api
+    ports:
+      # Only needed to reach the server from outside the compose network (the
+      # bot itself uses the internal hostname).  Deliberately bound to
+      # 127.0.0.1: on a VPS a plain "8081:8081" would expose the Bot API
+      # server to the whole internet - anyone who can reach it can act as
+      # your bot.  For remote access use an SSH tunnel instead:
+      #   ssh -L 8081:127.0.0.1:8081 you@your-server
+      - "127.0.0.1:8081:8081"
+
+  bot:
+    image: video-bot:local
+    build: *app-build
+    container_name: video-bot
+    restart: unless-stopped
+    depends_on:
+      - telegram-bot-api
+    env_file:
+      - .env
+    environment:
+      # Talk to the local Bot API server instead of api.telegram.org.
+      TELEGRAM_API_BASE_URL: http://telegram-bot-api:8081/bot
+      TELEGRAM_BASE_FILE_URL: http://telegram-bot-api:8081/file/bot
+      TEMP_DIRECTORY: /app/temp
+      OUTPUT_DIRECTORY: /app/output
+      MODELS_DIRECTORY: /app/models
+      MAX_CONCURRENT_JOBS: ${MAX_CONCURRENT_JOBS:-1}
+      MAX_JOBS_PER_USER: ${MAX_JOBS_PER_USER:-1}
+    volumes:
+      - ./temp:/app/temp
+      - ./output:/app/output
+      - ./models:/app/models
+      - ./logs:/app/logs
+      # Shared with telegram-bot-api: because both containers see the Bot API
+      # data directory at the same path, finished videos are *copied* instead
+      # of being downloaded over HTTP.
+      - bot-api-data:/var/lib/telegram-bot-api
+    # A running job needs time to notice the cancellation signal and clean up.
+    stop_grace_period: 60s
+
+  # -------------------------------------------------------------------------
+  # Browser interface: same image and pipeline as the bot, but the video is
+  # uploaded from a web page and the result is downloaded from it - no
+  # Telegram involved, so its size limits do not apply here.
+  # -------------------------------------------------------------------------
+  web:
+    image: video-bot:local
+    build: *app-build
+    container_name: video-web
+    # The image's default command starts the Telegram bot; this container must
+    # start the web server instead.
+    command: ["python", "-m", "web.app"]
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Must match the container side of the ports mapping below.
+      WEB_PORT: 8080
+      TEMP_DIRECTORY: /app/temp
+      OUTPUT_DIRECTORY: /app/output
+      MODELS_DIRECTORY: /app/models
+      MAX_CONCURRENT_JOBS: ${MAX_CONCURRENT_JOBS:-1}
+    ports:
+      # http://<server>/ - change the left side if port 80 is taken, e.g.
+      # WEB_PUBLISH_PORT=8080 in .env for http://<server>:8080/.
+      - "${WEB_PUBLISH_PORT:-80}:8080"
+    volumes:
+      - ./temp:/app/temp
+      - ./output:/app/output
+      # Shared with the bot so the separated-vocals model exists only once.
+      - ./models:/app/models
+      - ./logs:/app/logs
+    healthcheck:
+      # The image has no curl/wget; python is always there.
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/api/health', timeout=5).status == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    stop_grace_period: 60s
+
+volumes:
+  bot-api-data:

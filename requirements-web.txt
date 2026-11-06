@@ -1,0 +1,21 @@
+# ---------------------------------------------------------------------------
+# Python dependencies for the web picture tool only.
+#
+# The Telegram bot's heavy dependencies (Demucs + PyTorch) are deliberately
+# not installed here: the browser path only extracts photos, builds the 150
+# pictures and writes a ZIP.  This keeps the deployment image small and fast.
+#
+# FFmpeg (ffmpeg + ffprobe executables) is installed by apt in Dockerfile.web.
+# ---------------------------------------------------------------------------
+
+fastapi==0.141.1
+uvicorn==0.52.4
+python-multipart==0.0.32      # multipart/form-data parsing for uploads
+python-dotenv==1.2.3          # optional .env support for local runs
+
+Pillow==12.3.0
+numpy==2.2.6
+
+# Haar-cascade face detection for the 150 side-by-side pictures.  The
+# headless build ships the cascade files and needs no GUI libraries.
+opencv-python-headless==4.14.0.94

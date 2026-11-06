@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>150 pictures as a ZIP</title>
+<style>
+  :root {
+    --bg: #0f1218;
+    --card: #171c26;
+    --card-2: #1e2532;
+    --line: #2a3344;
+    --text: #e8ecf4;
+    --muted: #8d99ad;
+    --accent: #4f8cff;
+    --accent-2: #3a6fd8;
+    --ok: #3ecf8e;
+    --err: #ff6b6b;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: radial-gradient(1200px 600px at 50% -200px, #1b2434 0%, var(--bg) 60%);
+    color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 40px 16px 64px;
+  }
+  main { width: 100%; max-width: 680px; }
+  h1 { font-size: 26px; margin: 0 0 8px; letter-spacing: -0.3px; }
+  .lede { color: var(--muted); margin: 0 0 28px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px;
+    margin-bottom: 18px;
+  }
+  .card h2 { font-size: 18px; margin: 0 0 12px; }
+  .card.error { border-color: rgba(255,107,107,.45); }
+  .card.error h2 { color: var(--err); }
+  .card.done { border-color: rgba(62,207,142,.45); }
+  .card.done h2 { color: var(--ok); }
+  label.field { display: block; margin-bottom: 14px; }
+  label.field > span { display: block; font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+  label.field small { color: var(--muted); }
+  input[type=file] {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--card-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--text);
+  }
+  input[type=file]::file-selector-button {
+    background: var(--accent-2);
+    color: #fff;
+    border: 0;
+    border-radius: 8px;
+    padding: 6px 12px;
+    margin-right: 12px;
+    cursor: pointer;
+  }
+  button, .button {
+    display: inline-block;
+    font: inherit;
+    font-weight: 600;
+    color: #fff;
+    background: linear-gradient(180deg, var(--accent) 0%, var(--accent-2) 100%);
+    border: 0;
+    border-radius: 10px;
+    padding: 11px 18px;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  button:disabled { opacity: .55; cursor: default; }
+  button.secondary {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    font-weight: 500;
+  }
+  #submit { width: 100%; margin-top: 4px; }
+  .bar {
+    height: 12px;
+    background: var(--card-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 14px 0 10px;
+  }
+  #bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent-2), var(--accent));
+    transition: width .35s ease;
+  }
+  .meta { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
+  .meta b { color: var(--text); }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .steps { list-style: none; padding: 0; margin: 16px 0 0; font-size: 13px; color: var(--muted); }
+  .steps li { padding: 3px 0 3px 22px; position: relative; }
+  .steps li::before { content: "○"; position: absolute; left: 4px; }
+  .steps li.active { color: var(--text); }
+  .steps li.active::before { content: "◉"; color: var(--accent); }
+  .steps li.done::before { content: "●"; color: var(--ok); }
+  .hint { color: var(--muted); font-size: 13px; margin-top: 12px; }
+  #download { margin-top: 6px; }
+  .badge {
+    display: inline-block;
+    font-size: 12px;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 2px 10px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>150 pictures as a ZIP</h1>
+  <p class="lede">
+    Upload a video. You get back a ZIP with 150 pictures taken from it: two
+    photos side by side per picture, in the same order as the video. No video,
+    no audio and no overlay — only the pictures. Everything happens on this
+    server.
+  </p>
+
+  <!-- ---------------------------------------------------------------- -->
+  <form id="form" class="card">
+    <label class="field">
+      <span>Video file <small>— up to <b id="max-mb">…</b> MB</small></span>
+      <input type="file" id="video" accept="video/*,.mkv,.webm,.avi,.mov,.m4v,.mpg,.mpeg,.ts" required>
+    </label>
+
+    <button type="submit" id="submit">Upload and make the ZIP</button>
+    <p class="hint" id="auth-hint" hidden>This server is password protected — your browser will ask for the password.</p>
+  </form>
+
+  <!-- ---------------------------------------------------------------- -->
+  <section class="card" id="progress-card" hidden>
+    <h2 id="stage-title">Preparing…</h2>
+    <div class="bar"><div id="bar-fill"></div></div>
+    <p class="meta"><b id="percent">0%</b> · <span id="detail"></span><span id="elapsed-wrap" hidden> · <span id="elapsed"></span></span></p>
+    <ol class="steps" id="steps">
+      <li data-step="1">Selecting photos</li>
+      <li data-step="2">Building 150 side-by-side pictures</li>
+      <li data-step="3">Zipping the pictures</li>
+    </ol>
+    <div class="row" style="margin-top:14px">
+      <button type="button" id="cancel" class="secondary">Cancel</button>
+      <span class="badge" id="queue-badge" hidden></span>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------------- -->
+  <section class="card done" id="done-card" hidden>
+    <h2>Your 150 pictures are ready</h2>
+    <p class="meta" id="done-meta"></p>
+    <a id="download" class="button" href="#" download>Download the ZIP</a>
+    <p class="hint" id="download-hint">
+      After the download finishes the file is removed from the server, so save it somewhere safe.
+    </p>
+  </section>
+
+  <!-- ---------------------------------------------------------------- -->
+  <section class="card error" id="error-card" hidden>
+    <h2>Something went wrong</h2>
+    <p class="meta" id="error-text"></p>
+    <button type="button" id="again" class="secondary">Try again</button>
+  </section>
+</main>
+
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+const form = $("form");
+const videoInput = $("video");
+const submitButton = $("submit");
+const progressCard = $("progress-card");
+const doneCard = $("done-card");
+const errorCard = $("error-card");
+const barFill = $("bar-fill");
+const stageTitle = $("stage-title");
+const percentText = $("percent");
+const detailText = $("detail");
+const elapsedWrap = $("elapsed-wrap");
+const elapsedText = $("elapsed");
+const queueBadge = $("queue-badge");
+const steps = Array.from(document.querySelectorAll("#steps li"));
+const downloadLink = $("download");
+
+let currentJobId = null;
+let pollTimer = null;
+
+// Opening the page straight from disk (file://) means there is no server
+// behind it - every API call would fail.  Say that up front instead of
+// letting the first upload die with a network error.
+const FILE_MODE_HINT =
+  "This page was opened as a local file, so no server is behind it. " +
+  "Start the tool first (python -m web.app in the project folder), then open " +
+  "http://localhost:8080 - do not open the HTML file directly.";
+if (location.protocol === "file:") {
+  showError(FILE_MODE_HINT);
+}
+
+// Absolute, credential-free URL for an API path.  The page can be opened as
+// http://user:pass@host/ (bookmark or URL bar), and browsers reject fetch()/XHR
+// requests whose resolved URL still carries those credentials - so strip them;
+// the browser's own auth cache supplies the Authorization header.
+function apiUrl(path) {
+  const url = new URL(path, location.href);
+  url.username = "";
+  url.password = "";
+  return url.href;
+}
+
+// ------------------------------------------------------------------ config
+fetch(apiUrl("/api/config"))
+  .then((response) => (response.ok ? response.json() : Promise.reject(response)))
+  .then((config) => {
+    $("max-mb").textContent = config.max_upload_mb;
+    if (config.password_required) $("auth-hint").hidden = false;
+  })
+  .catch(() => {});
+
+// ------------------------------------------------------------------ helpers
+function showProgress(title, percent, detail, elapsed) {
+  form.hidden = true;
+  doneCard.hidden = true;
+  errorCard.hidden = true;
+  progressCard.hidden = false;
+  stageTitle.textContent = title;
+  percentText.textContent = Math.round(percent) + "%";
+  barFill.style.width = Math.max(0, Math.min(100, percent)) + "%";
+  detailText.textContent = detail || "";
+  if (elapsed !== undefined && elapsed !== null) {
+    elapsedWrap.hidden = false;
+    elapsedText.textContent = formatSeconds(elapsed) + " elapsed";
+  } else {
+    elapsedWrap.hidden = true;
+  }
+}
+
+function markSteps(stage, percent) {
+  for (const item of steps) {
+    const step = Number(item.dataset.step);
+    item.classList.toggle("done", step < stage || percent >= 100);
+    item.classList.toggle("active", step === stage && percent < 100);
+  }
+}
+
+function formatSeconds(total) {
+  total = Math.max(0, Math.round(total));
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return minutes ? minutes + " min " + seconds + " s" : seconds + " s";
+}
+
+function showError(message) {
+  stopPolling();
+  form.hidden = true;
+  progressCard.hidden = true;
+  doneCard.hidden = true;
+  errorCard.hidden = false;
+  $("error-text").textContent = message || "Unknown error.";
+}
+
+function resetToForm() {
+  stopPolling();
+  currentJobId = null;
+  errorCard.hidden = true;
+  doneCard.hidden = true;
+  progressCard.hidden = true;
+  form.hidden = false;
+  submitButton.disabled = false;
+  submitButton.textContent = "Upload and make the ZIP";
+  videoInput.value = "";
+  barFill.style.width = "0%";
+}
+
+function describeFailure(status, text) {
+  if (status === 401) return "Password required — reload the page and log in.";
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed && parsed.detail) return parsed.detail;
+  } catch (_) { /* not JSON */ }
+  if (status === 413) return text || "The video is larger than the limit.";
+  return text || ("Request failed (HTTP " + status + ").");
+}
+
+// ------------------------------------------------------------------ upload
+form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!videoInput.files.length) return;
+
+  const data = new FormData();
+  data.append("video", videoInput.files[0]);
+
+  submitButton.disabled = true;
+  submitButton.textContent = "Uploading…";
+  showProgress("Uploading the video…", 0, "", null);
+
+  const request = new XMLHttpRequest();
+  request.open("POST", apiUrl("/api/jobs"));
+  request.upload.addEventListener("progress", (progressEvent) => {
+    if (!progressEvent.lengthComputable) return;
+    const percent = (progressEvent.loaded / progressEvent.total) * 100;
+    showProgress(
+      "Uploading the video…",
+      percent,
+      (progressEvent.loaded / 1048576).toFixed(0) + " MB of " + (progressEvent.total / 1048576).toFixed(0) + " MB",
+      null
+    );
+  });
+  request.addEventListener("load", () => {
+    if (request.status === 202) {
+      let payload = {};
+      try { payload = JSON.parse(request.responseText); } catch (_) { /* ignore */ }
+      currentJobId = payload.job && payload.job.job_id;
+      if (!currentJobId) { showError("The server did not return a job id."); return; }
+      showProgress("Starting…", 0, "Upload complete, the job is being queued.", 0);
+      startPolling();
+    } else {
+      showError(describeFailure(request.status, request.responseText));
+    }
+  });
+  request.addEventListener("error", () => showError("The upload failed — is the server still running?"));
+  request.addEventListener("abort", () => showError("The upload was aborted."));
+  request.send(data);
+});
+
+// ------------------------------------------------------------------ polling
+function startPolling() {
+  stopPolling();
+  pollTimer = setInterval(pollStatus, 1500);
+  pollStatus();
+}
+
+function stopPolling() {
+  if (pollTimer !== null) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+}
+
+async function pollStatus() {
+  if (!currentJobId) return;
+  let payload;
+  try {
+    const response = await fetch(apiUrl("/api/jobs/" + encodeURIComponent(currentJobId)));
+    if (response.status === 404) { showError("The job is no longer known to the server (it may have restarted)."); return; }
+    if (!response.ok) { return; /* transient - try again next tick */ }
+    payload = await response.json();
+  } catch (_) {
+    return; /* network hiccup - try again next tick */
+  }
+
+  const job = payload.job;
+  if (!job) return;
+
+  if (job.state === "queued") {
+    const wait = job.queue_position > 1
+      ? "Waiting in the queue — " + (job.queue_position - 1) + " job(s) ahead of this one."
+      : "Waiting in the queue — starting in a moment.";
+    showProgress("Queued", 0, wait, job.elapsed);
+    markSteps(0, 0);
+    queueBadge.hidden = job.queue_position <= 1;
+    queueBadge.textContent = job.queue_position > 1 ? ("position " + job.queue_position) : "";
+  } else if (job.state === "running") {
+    const title = job.stage >= 1 ? ("Step " + job.stage + "/" + steps.length + " — " + job.stage_title) : job.stage_title;
+    showProgress(title, job.percent, job.detail, job.elapsed);
+    markSteps(job.stage, job.percent);
+    queueBadge.hidden = true;
+  } else if (job.state === "done") {
+    stopPolling();
+    progressCard.hidden = true;
+    form.hidden = true;
+    doneCard.hidden = false;
+    const parts = [];
+    if (job.pictures) parts.push(job.pictures + " pictures");
+    if (job.size_mb) parts.push(job.size_mb + " MB");
+    if (job.elapsed) parts.push("processed in " + formatSeconds(job.elapsed));
+    $("done-meta").textContent = parts.join(" · ");
+    if (job.download_url) {
+      downloadLink.href = apiUrl(job.download_url);
+      downloadLink.setAttribute("download", job.download_name || "150-pictures.zip");
+      downloadLink.hidden = false;
+      $("download-hint").hidden = false;
+    } else {
+      downloadLink.hidden = true;
+      $("download-hint").hidden = true;
+    }
+    submitButton.disabled = false;
+  } else if (job.state === "error") {
+    showError(job.error || "Processing failed.");
+  } else if (job.state === "cancelled") {
+    stopPolling();
+    progressCard.hidden = true;
+    form.hidden = false;
+    submitButton.disabled = false;
+    submitButton.textContent = "Upload and make the ZIP";
+    videoInput.value = "";
+  }
+}
+
+// ------------------------------------------------------------------ actions
+$("cancel").addEventListener("click", async () => {
+  if (!currentJobId) return;
+  $("cancel").disabled = true;
+  try { await fetch(apiUrl("/api/jobs/" + encodeURIComponent(currentJobId) + "/cancel"), { method: "POST" }); }
+  catch (_) { /* the poller will notice the state change */ }
+  setTimeout(() => { $("cancel").disabled = false; }, 3000);
+});
+
+downloadLink.addEventListener("click", () => {
+  $("download-hint").textContent = "Downloading — after it finishes the file is removed from the server.";
+});
+
+$("again").addEventListener("click", () => {
+  // Nothing to retry while the page is a local file - keep showing the hint.
+  if (location.protocol === "file:") { showError(FILE_MODE_HINT); return; }
+  resetToForm();
+});
+</script>
+</body>
+</html>

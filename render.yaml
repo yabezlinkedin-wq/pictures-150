@@ -1,0 +1,40 @@
+# ---------------------------------------------------------------------------
+# Render blueprint for the 150-picture web tool.
+#
+# Push this repository to GitHub, then open:
+#   https://render.com/deploy?repo=<your-repository-url>
+# Render reads this file, builds Dockerfile.web and asks for WEB_PASSWORD.
+#
+# Why Render instead of Vercel: Vercel caps uploads at 4.5 MB, does not ship
+# FFmpeg and stops a function after 60 seconds.  A 150-picture job needs all
+# three, so it runs in this long-lived Docker container instead.
+# ---------------------------------------------------------------------------
+services:
+  - type: web
+    name: pictures-150
+    runtime: docker
+    dockerfilePath: ./Dockerfile.web
+    dockerContext: .
+    plan: starter
+    region: singapore
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: WEB_PASSWORD
+        sync: false            # Render asks for it during setup
+      - key: MAX_VIDEO_SIZE
+        value: "209715200"     # 200 MB
+      - key: WEB_JOB_TTL_SECONDS
+        value: "3600"
+      - key: DELETE_TEMP_AFTER_SEND
+        value: "true"
+      - key: FRAME_EXTRACT_WORKERS
+        value: "4"             # keeps the 512 MB Starter instance comfortable
+      - key: TEMP_DIRECTORY
+        value: /tmp/pictures/temp
+      - key: OUTPUT_DIRECTORY
+        value: /tmp/pictures/output
+      - key: MODELS_DIRECTORY
+        value: /tmp/pictures/models
+      - key: LOG_DIRECTORY
+        value: /tmp/pictures/logs

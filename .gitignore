@@ -1,0 +1,36 @@
+# --- secrets ---------------------------------------------------------------
+# `.env` holds the real bot token and API hash - never commit it.
+.env
+.env.local
+*.pem
+
+# --- python ----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- runtime data ----------------------------------------------------------
+temp/
+output/
+logs/
+models/*
+!models/vocal_separation_model/
+!models/vocal_separation_model/.gitkeep
+
+# --- media leftovers -------------------------------------------------------
+*.mp4
+*.mkv
+*.mov
+*.webm
+*.wav
+*.flac
+*.mp3
+!tests/assets/*.mp4
+
+# --- deployment artefacts --------------------------------------------------
+video-bot-deploy.tar.gz

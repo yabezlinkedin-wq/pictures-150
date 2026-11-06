@@ -1,0 +1,45 @@
+# ---------------------------------------------------------------------------
+# Build-context exclusions.
+#
+# IMPORTANT: `.env` holds the real bot token - `COPY . .` would otherwise bake
+# it into the image.  The container receives it at runtime through
+# `env_file: .env` in docker-compose.yml instead.
+# ---------------------------------------------------------------------------
+.env
+.env.local
+*.pem
+
+# --- python artefacts ------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- runtime data (bind-mounted by docker-compose) -------------------------
+temp/
+output/
+logs/
+
+# --- model weights ---------------------------------------------------------
+# The image downloads them into /opt/model_cache during the build; the local
+# copy would only bloat the context (and is re-seeded into ./models at start).
+models/
+
+# --- media leftovers -------------------------------------------------------
+*.mp4
+*.mkv
+*.mov
+*.webm
+*.wav
+*.flac
+*.mp3
+
+# --- vcs -------------------------------------------------------------------
+.git/
+
+# --- deployment artefacts --------------------------------------------------
+video-bot-deploy.tar.gz

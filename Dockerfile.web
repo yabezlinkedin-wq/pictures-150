@@ -1,0 +1,45 @@
+# ---------------------------------------------------------------------------
+# Web-only image for the 150-picture tool.
+#
+#   docker build -f Dockerfile.web -t pictures-150 .
+#   docker run -p 8080:8080 -e WEB_PASSWORD=... pictures-150
+#
+# This image intentionally leaves out the Telegram bot, Demucs and PyTorch.
+# It contains FFmpeg plus the small set of libraries the browser path needs.
+# ---------------------------------------------------------------------------
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    WEB_HOST=0.0.0.0 \
+    TEMP_DIRECTORY=/tmp/pictures/temp \
+    OUTPUT_DIRECTORY=/tmp/pictures/output \
+    MODELS_DIRECTORY=/tmp/pictures/models \
+    LOG_DIRECTORY=/tmp/pictures/logs
+
+# ffmpeg/ffprobe do the frame extraction and video inspection.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+        ffmpeg \
+        ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements-web.txt ./
+RUN pip install --upgrade pip \
+ && pip install -r requirements-web.txt
+
+COPY config ./config
+COPY processing ./processing
+COPY web ./web
+
+RUN mkdir -p "$TEMP_DIRECTORY" "$OUTPUT_DIRECTORY" "$MODELS_DIRECTORY" "$LOG_DIRECTORY"
+
+EXPOSE 8080
+
+# Render sets PORT; config/settings.py uses WEB_PORT and falls back to PORT.
+CMD ["python", "-m", "web.app"]
