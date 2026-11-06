@@ -15,7 +15,7 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile.web
     dockerContext: .
-    plan: starter
+    plan: free               # 0.1 CPU / 512 MB - works, but jobs are slow
     region: singapore
     healthCheckPath: /api/health
     autoDeploy: true
@@ -29,7 +29,7 @@ services:
       - key: DELETE_TEMP_AFTER_SEND
         value: "true"
       - key: FRAME_EXTRACT_WORKERS
-        value: "4"             # keeps the 512 MB Starter instance comfortable
+        value: "2"             # keeps the 512 MB free instance from running out of memory
       - key: TEMP_DIRECTORY
         value: /tmp/pictures/temp
       - key: OUTPUT_DIRECTORY

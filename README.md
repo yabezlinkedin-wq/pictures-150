@@ -156,7 +156,8 @@ container instead - Render is the shortest path:
 1. Push this folder to a GitHub repository.
 2. Open `https://render.com/deploy?repo=<your-repository-url>`. Render reads
    `render.yaml`, builds `Dockerfile.web` and asks you for `WEB_PASSWORD`.
-3. Approve the **Starter** plan and deploy. The health check is
+3. Choose **Free** (0.1 CPU, 512 MB - works but a job can take a long time) or
+   **Starter** (about $7/month, much faster) and deploy. The health check is
    `/api/health`; the page is served on the service URL.
 
 `Dockerfile.web` contains only FFmpeg and the web dependencies - it does not
