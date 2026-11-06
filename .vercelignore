@@ -1,0 +1,28 @@
+# Files Vercel must not upload/bundle (Vercel's Python bundles have a 500 MB
+# limit and local media/runtime data would only bloat them).
+.env
+.env.local
+*.pem
+
+temp/
+output/
+logs/
+models/
+vibe_images/
+
+bot/
+scripts/
+docker-compose.yml
+docker-compose.gpu.yml
+Dockerfile
+Dockerfile.web
+render.yaml
+video-bot-deploy.tar.gz
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/

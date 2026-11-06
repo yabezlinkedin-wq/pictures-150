@@ -35,10 +35,10 @@ WORKDIR /app
 #   https://download.pytorch.org/whl/cu126   CUDA 12.6 (use docker-compose.gpu.yml)
 ARG TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu
 
-COPY requirements.txt ./
+COPY requirements-bot.txt ./
 RUN pip install --upgrade pip \
  && pip install --index-url "${TORCH_INDEX_URL}" "torch>=2.1,<3" \
- && pip install -r requirements.txt
+ && pip install -r requirements-bot.txt
 
 COPY . .
 

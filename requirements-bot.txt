@@ -1,0 +1,41 @@
+# ---------------------------------------------------------------------------
+# Python dependencies - full Telegram bot + web interface.
+#
+#   python -m pip install -r requirements-bot.txt
+#
+# The browser-only picture tool does not need Demucs or PyTorch; its manifest
+# is requirements.txt (and requirements-web.txt for the Docker/Render image).
+#
+# FFmpeg (the ``ffmpeg`` and ``ffprobe`` executables) must be installed
+# separately - it is not a Python package.  See the README.
+# ---------------------------------------------------------------------------
+
+# --- Telegram bot framework ------------------------------------------------
+python-telegram-bot==22.8
+httpx==0.28.1                 # streamed downloads/uploads with progress
+python-dotenv==1.2.3          # reads the .env file
+
+# --- web interface ----------------------------------------------------------
+fastapi==0.141.1
+uvicorn==0.52.4
+python-multipart==0.0.32      # multipart/form-data parsing for uploads
+
+# --- Frame selection / overlay ---------------------------------------------
+Pillow==12.3.0
+numpy==2.2.6
+
+# --- Face-centred pair composite -------------------------------------------
+opencv-python-headless==4.14.0.94
+
+# --- Vocal separation ------------------------------------------------------
+demucs==4.1.0
+tqdm>=4.65                    # progress output that the bot parses
+
+# --- PyTorch --------------------------------------------------------------
+# Install the build that matches your machine *before* installing this file:
+#
+#   CPU only:   pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   NVIDIA GPU: pip install torch --index-url https://download.pytorch.org/whl/cu126
+#
+# (The Dockerfile takes care of this automatically - see TORCH_INDEX_URL.)
+torch>=2.1,<3

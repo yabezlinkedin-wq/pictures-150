@@ -108,6 +108,16 @@
   .steps li.active::before { content: "◉"; color: var(--accent); }
   .steps li.done::before { content: "●"; color: var(--ok); }
   .hint { color: var(--muted); font-size: 13px; margin-top: 12px; }
+  .notice {
+    background: rgba(255, 183, 77, .09);
+    border: 1px solid rgba(255, 183, 77, .4);
+    border-radius: var(--radius);
+    color: #ffd28a;
+    padding: 14px 16px;
+    margin: 0 0 18px;
+    font-size: 14px;
+  }
+  .notice code { color: #ffe6b8; }
   #download { margin-top: 6px; }
   .badge {
     display: inline-block;
@@ -129,6 +139,13 @@
     photos side by side per picture, in the same order as the video. No video,
     no audio and no overlay — only the pictures. Everything happens on this
     server.
+  </p>
+
+  <p class="notice" id="serverless-note" hidden>
+    This page is hosted on Vercel, where the video job cannot run: Vercel
+    functions cap uploads at 4.5 MB, do not include FFmpeg and stop after
+    300 seconds. Deploy <code>Dockerfile.web</code> on Render (the included
+    <code>render.yaml</code>) or any Docker host to use the tool.
   </p>
 
   <!-- ---------------------------------------------------------------- -->
@@ -227,6 +244,11 @@ fetch(apiUrl("/api/config"))
   .then((config) => {
     $("max-mb").textContent = config.max_upload_mb;
     if (config.password_required) $("auth-hint").hidden = false;
+    if (config.serverless) {
+      $("serverless-note").hidden = false;
+      submitButton.disabled = true;
+      submitButton.textContent = "Not available on Vercel";
+    }
   })
   .catch(() => {});
 

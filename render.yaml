@@ -6,7 +6,7 @@
 # Render reads this file, builds Dockerfile.web and asks for WEB_PASSWORD.
 #
 # Why Render instead of Vercel: Vercel caps uploads at 4.5 MB, does not ship
-# FFmpeg and stops a function after 60 seconds.  A 150-picture job needs all
+# FFmpeg and stops a function after 300 seconds.  A 150-picture job needs all
 # three, so it runs in this long-lived Docker container instead.
 # ---------------------------------------------------------------------------
 services:

@@ -54,6 +54,16 @@ _MULTIPART_HEADROOM = 32 * 1024 * 1024
 
 _SAFE_SUFFIX = re.compile(r"\.[a-z0-9]{1,8}$")
 
+# Vercel can serve the page but not run the pipeline (4.5 MB request cap, no
+# FFmpeg, 300 s function limit).  Say so instead of accepting a job that is
+# guaranteed to fail.
+_VERCEL_NOTICE = (
+    "This deployment runs on Vercel, which cannot process videos: uploads are "
+    "limited to 4.5 MB, the serverless runtime has no FFmpeg and a function "
+    "stops after 300 seconds. Deploy the included Dockerfile.web on Render "
+    "(render.yaml) or any Docker host to use the tool."
+)
+
 
 # --------------------------------------------------------------------------- #
 # app lifecycle
@@ -155,6 +165,7 @@ async def public_config() -> dict[str, object]:
         "picture_count": settings.FRAME_COUNT,
         "photo_count": settings.PHOTO_COUNT,
         "stage_count": 3,
+        "serverless": settings.ON_VERCEL,
     }
 
 
@@ -165,6 +176,8 @@ async def public_config() -> dict[str, object]:
 async def create_job(
     video: Annotated[UploadFile, File()],
 ) -> JSONResponse:
+    if settings.ON_VERCEL:
+        raise HTTPException(status_code=503, detail=_VERCEL_NOTICE)
     if not video.filename:
         raise HTTPException(status_code=400, detail="No video file was uploaded.")
 

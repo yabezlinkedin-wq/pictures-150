@@ -1,0 +1,32 @@
+# Vercel / Python project metadata.
+#
+# Vercel's Python runtime looks for app.py / main.py / ... at the project root
+# by default.  This project keeps the FastAPI instance in web/app.py, so the
+# entrypoint is declared explicitly (see "Python entrypoints" in the Vercel
+# docs).  The dependencies mirror requirements.txt (the web-only set); the
+# Telegram bot's Demucs/PyTorch stack lives in requirements-bot.txt.
+
+[project]
+name = "pictures-150"
+version = "1.0.0"
+description = "Turns an uploaded video into 150 side-by-side pictures as a ZIP"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi==0.141.1",
+    "uvicorn==0.52.4",
+    "python-multipart==0.0.32",
+    "python-dotenv==1.2.3",
+    "Pillow==12.3.0",
+    "numpy==2.2.6",
+    "opencv-python-headless==4.14.0.94",
+]
+
+[tool.vercel]
+entrypoint = "web.app:app"
+
+# Vercel may use uv when it finds pyproject.toml.  The app is not a wheel - it
+# runs straight from the source tree - so uv must install only the
+# dependencies, never try to build/install the project itself.
+[tool.uv]
+package = false
+

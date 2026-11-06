@@ -98,11 +98,14 @@ Requirements:
 
 ```bash
 python -m pip install torch --index-url https://download.pytorch.org/whl/cpu   # or .../cu126 for CUDA
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-bot.txt
 python scripts/download_model.py        # pre-fetch the separation weights (~80 MB)
 cp .env.example .env                    # fill in TELEGRAM_BOT_TOKEN
 python -m bot.telegram_bot
 ```
+
+`requirements.txt` is the slim, web-only manifest (no Demucs/PyTorch);
+`requirements-bot.txt` installs everything the Telegram bot needs.
 
 Vocal separation is the slowest step. With the default auto worker count
 (½ the CPU cores, capped at 8) and the default crossfade `DEMUCS_OVERLAP=0.1`,
@@ -125,6 +128,7 @@ for 20 minutes, not 40 (the discarded part could not have appeared in the
 A picture-only front end - no Telegram account or bot token needed:
 
 ```bash
+python -m pip install -r requirements.txt    # FFmpeg must already be installed
 python -m web.app        # then open http://localhost:8080
 ```
 
@@ -171,8 +175,18 @@ docker run -p 8080:8080 -e WEB_PASSWORD=change-me pictures-150
 ```
 
 > Vercel limitation, in one sentence: its functions reject request bodies over
-> 4.5 MB, do not include FFmpeg, and stop after 60 seconds, so the 150-picture
-> job cannot complete there.
+> 4.5 MB, do not include FFmpeg, and stop after 300 seconds (Hobby plan), so
+> the 150-picture job cannot complete there.
+
+### About the Vercel deployment
+
+The repository contains `pyproject.toml` (`[tool.vercel] entrypoint =
+"web.app:app"`), `vercel.json` and `.vercelignore`, so a Vercel import now
+gets past the *"No FastAPI entrypoint found"* build error and deploys. The
+page on Vercel will show a notice and keep the upload button disabled,
+because a Vercel function cannot run the job: 4.5 MB upload cap, no FFmpeg
+and a 300 s maximum. Use Render (above), Oracle Cloud Always Free, or any VPS
+for a deployment that processes real videos.
 
 ## Deploy on a VPS
 

@@ -56,6 +56,12 @@ def _bool(name: str, default: bool) -> bool:
     return raw in {"1", "true", "yes", "y", "on"}
 
 
+# Vercel sets VERCEL=1 both at build time and inside the function.  The
+# serverless runtime has a read-only project directory (only /tmp is writable)
+# and a hard 4.5 MB request body limit, so the web app adapts to both.
+ON_VERCEL = _bool("VERCEL", False)
+
+
 # --------------------------------------------------------------------------- #
 # Telegram
 # --------------------------------------------------------------------------- #
@@ -98,6 +104,9 @@ OFFICIAL_UPLOAD_LIMIT = 50 * MB
 LOCAL_SERVER_LIMIT = 2000 * MB
 
 MAX_VIDEO_SIZE = _int("MAX_VIDEO_SIZE", LOCAL_SERVER_LIMIT)
+if ON_VERCEL:
+    # Vercel rejects request bodies over 4.5 MB before they reach the app.
+    MAX_VIDEO_SIZE = min(MAX_VIDEO_SIZE, 4 * MB)
 MAX_OUTPUT_SIZE = _int("MAX_OUTPUT_SIZE", 0)  # 0 -> derived from the API mode
 
 _EFFECTIVE_DOWNLOAD_LIMIT = (
@@ -115,10 +124,13 @@ _EFFECTIVE_UPLOAD_LIMIT = (
 # --------------------------------------------------------------------------- #
 # Directories
 # --------------------------------------------------------------------------- #
-TEMP_DIRECTORY = Path(_str("TEMP_DIRECTORY", str(PROJECT_ROOT / "temp")))
-OUTPUT_DIRECTORY = Path(_str("OUTPUT_DIRECTORY", str(PROJECT_ROOT / "output")))
-MODELS_DIRECTORY = Path(_str("MODELS_DIRECTORY", str(PROJECT_ROOT / "models")))
-LOG_DIRECTORY = Path(_str("LOG_DIRECTORY", str(PROJECT_ROOT / "logs")))
+# Serverless functions can only write below /tmp; everywhere else the project
+# folder (or the values from .env) is used.
+_DEFAULT_DATA_ROOT = Path("/tmp/pictures") if ON_VERCEL else PROJECT_ROOT
+TEMP_DIRECTORY = Path(_str("TEMP_DIRECTORY", str(_DEFAULT_DATA_ROOT / "temp")))
+OUTPUT_DIRECTORY = Path(_str("OUTPUT_DIRECTORY", str(_DEFAULT_DATA_ROOT / "output")))
+MODELS_DIRECTORY = Path(_str("MODELS_DIRECTORY", str(_DEFAULT_DATA_ROOT / "models")))
+LOG_DIRECTORY = Path(_str("LOG_DIRECTORY", str(_DEFAULT_DATA_ROOT / "logs")))
 
 # Keep the vocal-separation weights inside the project (models/) instead of
 # the user home directory, which makes Docker volumes predictable.
